@@ -1,0 +1,24 @@
+{
+  "name": "rtk-telecom-main-server",
+  "version": "1.0.0",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
+    "lodash.isequal": "^4.5.0",
+    "mongoose": "^8.16.4",
+    "transliteration": "^2.3.5"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10"
+  }
+}
