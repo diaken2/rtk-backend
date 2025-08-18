@@ -260,25 +260,38 @@ res.status(500).json({ error: 'Ошибка сервера' });
 
 // GET /tariffs/:slug — получить данные по городу
 router.get("/tariffs/:slug", async (req, res) => {
-try {
-const city = await TariffModel.findOne({ slug: req.params.slug }).lean();
-if (!city) return res.status(404).json({ error: "Город не найден" });
-return res.status(200).json(city);
-} catch (err) {
-console.error("Ошибка при получении города:", err);
-return res.status(500).json({ error: "Ошибка сервера" });
-}
+  try {
+    const { fields } = req.query;
+    
+    const projection = {
+      'meta.name': 1,
+      'meta.region': 1,
+      'services': 1,
+      '_id': 0
+    };
+    
+    const city = await TariffModel.findOne({ slug: req.params.slug }, projection).lean();
+    
+    if (!city) return res.status(404).json({ error: "Город не найден" });
+    
+    res.set('Cache-Control', 'public, max-age=3600');
+    return res.status(200).json(city);
+  } catch (err) {
+    console.error("Ошибка при получении города:", err);
+    return res.status(500).json({ error: "Ошибка сервера" });
+  }
 });
+
 
 // GET /tariffs — получить список всех slug
 router.get("/tariffs", async (req, res) => {
-try {
-const cities = await TariffModel.find({}, "slug meta.name").lean();
-return res.status(200).json(cities);
-} catch (err) {
-console.error("Ошибка при получении списка городов:", err);
-return res.status(500).json({ error: "Ошибка сервера" });
-}
+  try {
+    const cities = await TariffModel.find({}, { slug: 1, "meta.name": 1 }).lean();
+    return res.status(200).json(cities);
+  } catch (err) {
+    console.error("Ошибка при получении списка городов:", err);
+    return res.status(500).json({ error: "Ошибка сервера" });
+  }
 });
 router.get('/tariffs-full', async (req, res) => {
 try {
@@ -307,33 +320,30 @@ res.status(500).json({ error: 'Ошибка сервера' });
 
 
 
-router.post('/tariffs/:slug/:service', async (req, res) => {
-try {
-const { slug, service } = req.params;
-const newTariff = req.body;
-
-const city = await TariffModel.findOne({ slug });
-
-if (!city) return res.status(404).json({ error: 'Город не найден' });
-
-if (!city.services[service]) {
-  city.services[service] = {
-    id: service,
-    title: service,
-    description: '',
-    meta: { description: '', keywords: [], ogImage: '' },
-    tariffs: []
-  };
-}
-
-city.services[service].tariffs.push(newTariff);
-city.markModified('services')
-await city.save();
-res.status(200).json({ message: 'Тариф добавлен' });
-} catch (err) {
-console.error('Ошибка при добавлении тарифа:', err);
-res.status(500).json({ error: 'Ошибка сервера' });
-}
+router.get("/tariffs/:slug/:service", async (req, res) => {
+  try {
+    const { slug, service } = req.params;
+    
+    const projection = {
+      [`services.${service}`]: 1,
+      'meta.name': 1,
+      '_id': 0
+    };
+    
+    const city = await TariffModel.findOne({ slug }, projection).lean();
+    
+    if (!city || !city.services?.[service]) {
+      return res.status(404).json({ error: "Сервис не найден" });
+    }
+    
+    res.set('Cache-Control', 'public, max-age=3600');
+    return res.status(200).json({
+      service: city.services[service],
+      cityName: city.meta.name
+    });
+  } catch (err) {
+    return res.status(500).json({ error: "Ошибка сервера" });
+  }
 });
 
 
