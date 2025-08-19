@@ -254,7 +254,35 @@ res.status(500).json({ error: 'Ошибка сервера' });
 
 
 
+router.post('/tariffs/:slug/:service', async (req, res) => {
+  try {
+    const { slug, service } = req.params;
+    const newTariff = req.body;
 
+    const city = await TariffModel.findOne({ slug });
+    
+    if (!city) {
+      return res.status(404).json({ error: 'Город не найден' });
+    }
+
+    if (!city.services[service]) {
+      return res.status(404).json({ error: 'Сервис не найден' });
+    }
+
+    // Добавляем новый тариф
+    city.services[service].tariffs.push(newTariff);
+    city.markModified('services');
+    await city.save();
+
+    res.status(201).json({ 
+      message: 'Тариф успешно добавлен',
+      tariff: newTariff
+    });
+  } catch (err) {
+    console.error('Ошибка при добавлении тарифа:', err);
+    res.status(500).json({ error: 'Ошибка сервера' });
+  }
+});
 
 
 
